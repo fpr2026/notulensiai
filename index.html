@@ -1,0 +1,1141 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI Notulensi Rapat V5 — Smart Meeting Minutes & Official Exporter</title>
+<style>
+:root{
+  --navy:#0d233a;--navy-light:#1c3d69;--blue:#1f6feb;--blue-light:#eef5ff;
+  --bg:#f4f7fb;--card:#ffffff;--text:#1a2332;--muted:#64748b;--line:#d8e2ec;
+  --green:#107c41;--green-light:#e6f6ee;--red:#c5221f;--amber:#b45309;--amber-light:#fef3c7;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5}
+.app{display:flex;min-height:100vh}
+
+/* Sidebar */
+.sidebar{width:255px;background:var(--navy);color:#fff;padding:24px 14px;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;flex-shrink:0;box-shadow:2px 0 10px rgba(0,0,0,0.12);z-index:10}
+.brand{font-weight:800;font-size:18px;letter-spacing:0.5px;padding:8px 12px 20px;border-bottom:1px solid rgba(255,255,255,0.12);line-height:1.3}
+.brand small{display:block;font-size:11px;font-weight:400;opacity:.75;margin-top:4px}
+.nav{margin-top:18px;flex:1}
+.nav button{width:100%;background:transparent;border:0;color:#cddae8;text-align:left;padding:12px 14px;border-radius:8px;margin:4px 0;cursor:pointer;font-size:14px;font-weight:500;transition:all 0.2s}
+.nav button.active,.nav button:hover{background:var(--navy-light);color:#fff;font-weight:600}
+
+/* Main Layout */
+.main{flex:1;padding:28px 36px;max-width:1400px;margin:0 auto;width:100%}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px}
+.top h1{margin:0;font-size:24px;color:var(--navy);font-weight:800}
+.top p{margin:4px 0 0;color:var(--muted);font-size:13px}
+
+/* Cards */
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px;box-shadow:0 2px 6px rgba(15,39,68,0.04)}
+.card .label{font-size:11px;font-weight:700;letter-spacing:0.5px;color:var(--muted);text-transform:uppercase}
+.card .metric{font-size:30px;font-weight:800;color:var(--navy);margin-top:6px}
+
+/* Panel & Form */
+.panel{background:#fff;border:1px solid var(--line);border-radius:12px;padding:24px;margin-bottom:20px;box-shadow:0 2px 8px rgba(15,39,68,0.03)}
+.panel h2{font-size:17px;margin:0 0 16px;color:var(--navy);font-weight:700;display:flex;align-items:center;gap:8px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.field label{display:block;font-size:12px;font-weight:700;margin-bottom:6px;color:#334155}
+.field input,.field textarea,.field select{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;font:inherit;font-size:13px;transition:border-color 0.2s}
+.field input:focus,.field textarea:focus,.field select:focus{border-color:var(--blue);outline:none}
+.field textarea{min-height:100px;resize:vertical}
+
+/* Buttons */
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;align-items:center}
+.btn{border:0;border-radius:8px;padding:10px 16px;cursor:pointer;font-weight:600;font-size:13px;display:inline-flex;align-items:center;gap:6px;transition:all 0.2s;text-decoration:none}
+.btn:hover{opacity:0.92;transform:translateY(-1px)}
+.btn:active{transform:translateY(0)}
+.primary{background:var(--blue);color:#fff}
+.secondary{background:#f1f5f9;color:#1e293b;border:1px solid var(--line)}
+.secondary:hover{background:#e2e8f0}
+.success{background:var(--green);color:#fff}
+.danger{background:#fee2e2;color:var(--red);border:1px solid #fca5a5}
+
+/* Dropzone */
+.drop{border:2px dashed #94a3b8;border-radius:12px;padding:32px;text-align:center;background:#f8fafc;cursor:pointer;transition:all 0.2s}
+.drop:hover,.drop.drag{border-color:var(--blue);background:var(--blue-light)}
+.drop strong{display:block;margin-bottom:6px;font-size:15px;color:var(--navy)}
+.filelist{margin-top:12px;font-size:13px}
+.fileitem{padding:9px 12px;background:#f8fafc;border:1px solid var(--line);border-radius:6px;margin-bottom:6px;display:flex;justify-content:space-between}
+
+/* Table */
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:10px 12px;border:1px solid var(--line);text-align:left;vertical-align:top}
+th{background:#f8fafc;font-weight:700;color:#334155}
+.badge{display:inline-block;padding:3px 8px;border-radius:999px;font-size:11px;font-weight:600}
+.badge.final{background:var(--green-light);color:var(--green)}
+.badge.draft{background:var(--amber-light);color:var(--amber)}
+
+.hidden{display:none!important}
+.notice{padding:12px 14px;border-radius:8px;background:#eff6ff;color:#1e40af;font-size:12.5px;margin-bottom:14px;border:1px solid #bfdbfe;line-height:1.5}
+.warn{background:#fffbeb;color:#92400e;border-color:#fde68a}
+.loading{padding:16px;background:#f8fafc;border-radius:8px;font-size:13px;color:var(--navy);font-weight:600;display:flex;align-items:center;gap:10px}
+
+/* Logo Management */
+.logo-ctrl-box{display:flex;gap:16px;align-items:center;background:#f8fafc;padding:14px;border-radius:8px;border:1px solid var(--line);margin-top:6px}
+.logo-thumb{width:75px;height:85px;border:1px dashed #94a3b8;border-radius:6px;display:flex;align-items:center;justify-content:center;background:#fff;overflow:hidden;flex-shrink:0}
+.logo-thumb img{max-width:100%;max-height:100%;object-fit:contain}
+
+/* =========================================================
+   OFFICIAL NOTULA PAPER STYLING (MATCHING EXACT PDF FORMAT)
+   ========================================================= */
+.template-paper-wrapper{background:#cbd5e1;padding:24px;border-radius:8px;overflow-x:auto}
+.template-paper{
+  background:#ffffff;border:1px solid #94a3b8;border-radius:2px;padding:48px 56px;max-width:850px;margin:0 auto;
+  box-shadow:0 8px 24px rgba(0,0,0,0.08);font-family:"Times New Roman",Times,serif;color:#000000;line-height:1.4;
+}
+
+/* KOP SURAT */
+.official-kop{display:flex;align-items:center;border-bottom:3.5px double #000;padding-bottom:10px;margin-bottom:18px;gap:16px}
+.official-kop .kop-logo-box{width:80px;height:95px;flex:0 0 80px;display:flex;align-items:center;justify-content:center}
+.official-kop .kop-logo-box img{max-width:80px;max-height:92px;object-fit:contain}
+.official-kop .kop-logo-svg{width:75px;height:88px}
+.official-kop .kop-text{flex:1;text-align:center}
+.official-kop .kop-gov{font-size:15pt;font-weight:bold;letter-spacing:0.5px;text-transform:uppercase}
+.official-kop .kop-dept{font-size:16pt;font-weight:bold;margin-top:2px;text-transform:uppercase}
+.official-kop .kop-address{font-size:9.5pt;margin-top:4px;line-height:1.3;font-weight:normal}
+
+/* JUDUL */
+.notula-title{text-align:center;font-size:15pt;font-weight:bold;margin:16px 0 14px;text-decoration:underline;letter-spacing:1.5px}
+
+/* METADATA */
+.meta-table{width:100%;border-collapse:collapse;margin-bottom:16px}
+.meta-table td{border:none!important;padding:3.5px 4px!important;font-size:11.5pt;vertical-align:top;background:transparent!important}
+.meta-table td.colon{width:16px;text-align:center}
+.meta-table td.label-td{width:165px;font-weight:normal}
+
+/* SECTION */
+.sec-title{font-size:11.5pt;font-weight:bold;margin-top:16px;margin-bottom:6px}
+.sec-content{font-size:11.5pt;text-align:justify;margin-bottom:12px}
+.sec-content ol,.sec-content ul{margin:4px 0 6px 24px;padding:0}
+.sec-content li{margin-bottom:4px}
+
+/* TABLE */
+.official-table{width:100%;border-collapse:collapse;margin:10px 0 16px;font-size:11pt}
+.official-table th,.official-table td{border:1px solid #000!important;padding:6px 8px;vertical-align:top}
+.official-table th{background:#f2f2f2!important;font-weight:bold;text-align:center}
+
+/* SIGNATURE */
+.sig-container{margin-top:28px;width:100%;display:flex;justify-content:flex-end;page-break-inside:avoid}
+.signature-block{width:320px;text-align:left;font-size:11.5pt}
+.signature-block .signer-space{height:65px}
+.signature-block .signer-name{font-weight:bold;text-decoration:underline}
+
+/* =========================================================
+   PRINT / PDF HIGH-FIDELITY RULES (CALIBRATED FOR A4)
+   ========================================================= */
+@media print{
+  @page{size:A4 portrait;margin:12mm 15mm 15mm 15mm}
+  body{background:#fff!important;color:#000!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .sidebar,.top,.cards,.panel>h2,.panel>.actions,.panel>.toolbar,.panel>.notice,.panel>.grid,#dropArea,#fileList,#loadingBox,#emptyResult,.badge,.logo-ctrl-box,.template-paper-wrapper{
+    background:transparent!important;padding:0!important;margin:0!important;border:none!important;box-shadow:none!important
+  }
+  .sidebar,.top,.cards,.panel>h2,.panel>.actions,.panel>.toolbar,.panel>.notice,.panel>.grid,#dropArea,#fileList,#loadingBox,#emptyResult,.badge,.actions{
+    display:none!important
+  }
+  .main{padding:0!important;margin:0!important;max-width:none!important;width:100%!important}
+  .panel{border:0!important;padding:0!important;box-shadow:none!important}
+  .template-paper-wrapper{padding:0!important;border-radius:0!important}
+  .template-paper{border:0!important;box-shadow:none!important;padding:0!important;margin:0!important;max-width:none!important;width:100%!important}
+}
+
+@media(max-width:900px){.sidebar{width:200px}.cards{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:650px){.app{display:block}.sidebar{width:100%;height:auto;position:relative}.cards{grid-template-columns:1fr}.main{padding:16px}.grid{grid-template-columns:1fr}}
+</style>
+
+<!-- Standalone Scripts -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.8.0/mammoth.browser.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/docx/8.2.3/docx.iife.min.js"></script>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      AI NOTULENSI RAPAT
+      <small>Smart Meeting Minutes · V5 Official</small>
+    </div>
+    <div class="nav">
+      <button class="active" data-page="dashboard">▦ Dashboard</button>
+      <button data-page="create">＋ Buat Notulensi</button>
+      <button data-page="archive">▤ Arsip Notulensi</button>
+      <button data-page="settings">⚙ Pengaturan & Logo</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <!-- DASHBOARD -->
+    <section id="dashboard" class="page">
+      <div class="top">
+        <div>
+          <h1>Dashboard Notulensi</h1>
+          <p>Kelola notula resmi, transkrip AI, dan ekspor dokumen pemerintahan.</p>
+        </div>
+        <button class="btn primary" onclick="showPage('create')">+ Buat Notulensi Baru</button>
+      </div>
+      <div class="cards">
+        <div class="card"><div class="label">TOTAL NOTULENSI</div><div class="metric" id="mTotal">0</div></div>
+        <div class="card"><div class="label">BULAN INI</div><div class="metric" id="mMonth">0</div></div>
+        <div class="card"><div class="label">DRAFT AKTIF</div><div class="metric" id="mDraft">0</div></div>
+        <div class="card"><div class="label">TERSIMPAN DI ARSIP</div><div class="metric" id="mFinal">0</div></div>
+      </div>
+      <div class="panel">
+        <h2>Aktivitas Notulensi Terbaru</h2>
+        <div id="recentList"></div>
+      </div>
+    </section>
+
+    <!-- CREATE NOTULENSI -->
+    <section id="create" class="page hidden">
+      <div class="top">
+        <div>
+          <h1>Penyusunan Notula Resmi</h1>
+          <p>Unggah bahan rapat, hasilkan format baku secara otomatis, dan unduh dokumen rapih.</p>
+        </div>
+      </div>
+
+      <!-- Upload -->
+      <div class="panel">
+        <h2>1. Unggah Bahan Rapat</h2>
+        <div class="notice">
+          Format didukung: <b>TXT, PDF, DOCX, PPTX</b>. Anda juga dapat langsung mengunggah file transkrip Zoom/Notula audio.
+        </div>
+        <div class="drop" id="dropArea">
+          <strong>Tarik dan lepaskan file bahan rapat ke sini</strong>
+          <span>atau klik untuk memilih file dari komputer</span>
+          <input id="fileInput" type="file" multiple accept=".txt,.pdf,.docx,.ppt,.pptx" hidden>
+        </div>
+        <div id="fileList" class="filelist"></div>
+        <div class="actions">
+          <button class="btn primary" id="processBtn">✦ Susun Notulensi dengan AI</button>
+          <button class="btn secondary" id="clearFiles">Bersihkan File</button>
+        </div>
+      </div>
+
+      <!-- Metadata -->
+      <div class="panel">
+        <h2>2. Informasi & Metadata Rapat</h2>
+        <div class="grid">
+          <div class="field"><label>Nama Rapat / Kegiatan</label><input id="fName" placeholder="Contoh: Rapat Pembahasan Instansi/OPD"></div>
+          <div class="field"><label>Hari / Tanggal Rapat</label><input id="fDate" placeholder="Contoh: Kamis, 20 Agustus 2026"></div>
+          <div class="field"><label>Nomor Surat Undangan</label><input id="fInvite" placeholder="Contoh: 005/1842/instansi/2026 atau Tidak tercantum"></div>
+          <div class="field"><label>Waktu & Tempat / Media</label><input id="fTime" placeholder="Contoh: 09.00 WIB s/d Selesai"></div>
+          <div class="field"><label>Pimpinan Rapat</label><input id="fLeader" placeholder="Contoh: Kepala Seksi/Dinas/Kementerian"></div>
+          <div class="field"><label>Pencatat / Notulis</label><input id="fNotulis" placeholder="Contoh: Tim Teknis Notulensi"></div>
+          <div class="field" style="grid-column:1/-1">
+            <label>Peserta Rapat (Satu instansi per baris)</label>
+            <textarea id="fParticipants" placeholder="1. Dinas Pekerjaan Umum dan Penataan Ruang Provinsi&#10;2. Dinas Tata Ruang dan Bangunan&#10;3. PT PLN (Persero)"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- Output Paper Preview -->
+      <div class="panel">
+        <div class="top" style="margin-bottom:12px">
+          <div>
+            <h2 style="margin:0">3. Lembar Hasil Notula Rapat (Format Baku)</h2>
+          </div>
+          <span id="editState" class="badge">Preview Mode</span>
+        </div>
+
+        <div id="loadingBox" class="loading hidden">
+          <svg width="20" height="20" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none"><circle cx="12" cy="12" r="10" stroke-opacity=".25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-linecap="round"/></svg>
+          Gemini AI sedang memproses bahan dan menyusun notula resmi...
+        </div>
+
+        <div id="emptyResult" class="notice warn">
+          Belum ada data notulensi. Silakan upload bahan rapat lalu klik <b>"Susun Notulensi dengan AI"</b>.
+        </div>
+
+        <div class="template-paper-wrapper">
+          <div id="resultContainer"></div>
+        </div>
+
+        <div class="actions" style="margin-top:22px;padding-top:16px;border-top:1px solid var(--line)">
+          <button class="btn secondary" id="editToggleBtn">✎ Edit Lembar Teks</button>
+          <button class="btn success" id="saveArchiveBtn">💾 Simpan ke Arsip</button>
+          <button class="btn primary" id="docxExportBtn" style="background:#0f52ba">↓ Download DOCX (Rapi Sesuai Format)</button>
+          <button class="btn primary" id="pdfExportBtn" style="background:#b91c1c">↓ Download PDF (A4 Cetak Siap Pakai)</button>
+          <button class="btn secondary" id="regenerateBtn">↻ Susun Ulang AI</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ARCHIVE -->
+    <section id="archive" class="page hidden">
+      <div class="top">
+        <div>
+          <h1>Arsip Notulensi Rapat</h1>
+          <p>Daftar seluruh notulensi yang tersimpan di memori browser Anda.</p>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="actions" style="margin-top:0;margin-bottom:16px">
+          <input id="searchInput" placeholder="Cari nama kegiatan, tanggal, atau peserta..." style="flex:1;padding:10px 12px;border:1px solid var(--line);border-radius:8px">
+        </div>
+        <div id="archiveTableContainer"></div>
+      </div>
+    </section>
+
+    <!-- SETTINGS & LOGO -->
+    <section id="settings" class="page hidden">
+      <div class="top">
+        <div>
+          <h1>Pengaturan Kop Surat, Logo & AI</h1>
+          <p>Kustomisasi logo instansi, format kepala surat, penandatangan, dan kredensial AI.</p>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>1. Logo & Identitas Kop Surat Resmi</h2>
+        <div class="grid">
+          <div>
+            <div class="field">
+              <label>Logo Instansi (Muncul di KOP Surat & DOCX/PDF)</label>
+              <div class="logo-ctrl-box">
+                <div class="logo-thumb" id="logoThumbPreview">
+                  <span style="font-size:10px;color:var(--muted);text-align:center">Logo Default</span>
+                </div>
+                <div style="flex:1">
+                  <input type="file" id="logoFileInput" accept="image/png,image/jpeg,image/svg+xml,image/webp" style="display:none">
+                  <div class="actions" style="margin-top:0">
+                    <button class="btn secondary" style="padding:6px 12px;font-size:12px" onclick="$('logoFileInput').click()">📁 Upload Logo Baru</button>
+                    <button class="btn secondary" style="padding:6px 12px;font-size:12px" id="resetDefaultLogoBtn">Reset Logo</button>
+                  </div>
+                  <small style="color:var(--muted);display:block;margin-top:6px;font-size:11px">Format: PNG, JPG, WebP, SVG transparan. Logo otomatis tersimpan.</small>
+                </div>
+              </div>
+            </div>
+            <div class="field" style="margin-top:14px"><label>Pemerintah Daerah</label><input id="tplGov" value="PEMERINTAH PROVINSI"></div>
+            <div class="field" style="margin-top:12px"><label>Perangkat Daerah / Dinas</label><input id="tplDept" value="DINAS/instansi/OPD/Kementerian"></div>
+          </div>
+          <div>
+            <div class="field">
+              <label>Alamat & Kontak Kop Surat</label>
+              <textarea id="tplAddress" style="min-height:90px">Kawasan Pemerintah atau Isi secara manual
+Jalan Isi secara manual
+Website: https://Isi secara manual Email: Isi secara manual</textarea>
+            </div>
+            <div class="field" style="margin-top:10px"><label>Kota Penandatangan</label><input id="tplCity" value="Kota/Kab"></div>
+            <div class="field" style="margin-top:10px"><label>Jabatan Penandatangan</label><input id="tplSignerTitle" value="Jabatan"></div>
+            <div class="field" style="margin-top:10px"><label>Nama Pejabat</label><input id="tplSigner" value="Nama"></div>
+            <div class="field" style="margin-top:10px"><label>NIP</label><input id="tplNip" value="19xxxxxxxxxxxxxxx"></div>
+          </div>
+        </div>
+        <div class="actions">
+          <button class="btn primary" id="saveTemplateBtn">Simpan Identitas Kop & Logo</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>2. Konfigurasi AI Gemini</h2>
+        <div class="grid">
+          <div class="field"><label>Gemini API Key</label><input id="apiKey" type="password" placeholder="Masukkan Google AI Studio API Key"></div>
+          <div class="field">
+            <label>Pilihan Model</label>
+            <select id="modelSelect">
+              <option value="gemini-3.5-flash-lite">gemini-3.5-flash-lite (Cepat, Akurat & Stabil)</option>
+	      <option value="gemini-3.5-flash">gemini-3.5-flash (Stabil)</option>
+              <option value="gemini-3.6-flash">gemini-3.6-flash (Rekomendasi Terbaru)</option>
+              <option value="gemini-3.1-pro-preview">gemini-3.1-pro-preview</option>
+            </select>
+          </div>
+        </div>
+        <div class="actions">
+          <button class="btn primary" id="saveApiSettingsBtn">Simpan Konfigurasi AI</button>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+// ==========================================
+// STATE & HELPER INITIALIZATION
+// ==========================================
+const $ = id => document.getElementById(id);
+let uploadedFiles = [];
+let rawExtractedText = "";
+let currentNotulaData = null;
+let isEditable = false;
+
+// Default Logo Emblem SVG (High Quality Vector)
+const DEFAULT_Logo_SVG = `<svg viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg" class="kop-logo-svg">
+  <path d="M50 5 L88 24 L88 72 Q50 115 50 115 Q12 72 12 72 L12 24 Z" fill="#1b4d3e" stroke="#cfa43b" stroke-width="3"/>
+  <path d="M50 12 L82 28 L82 68 Q50 105 50 105 Q18 68 18 28 Z" fill="#0f766e" stroke="#ffffff" stroke-width="1.5"/>
+  <rect x="42" y="32" width="16" height="42" fill="#ffffff" rx="3"/>
+  <polygon points="50,22 36,36 64,36" fill="#eab308"/>
+  <rect x="46" y="44" width="8" height="20" fill="#0f766e"/>
+  <path d="M26 65 Q50 82 74 65" fill="none" stroke="#eab308" stroke-width="4"/>
+  <text x="50" y="86" font-size="8" font-family="Arial,sans-serif" font-weight="bold" fill="#ffffff" text-anchor="middle">Logo</text>
+  <text x="50" y="96" font-size="6" font-family="Arial,sans-serif" font-weight="bold" fill="#fef08a" text-anchor="middle">IMAN TAQWA</text>
+</svg>`;
+
+// Navigation Tabs
+function showPage(pageId) {
+  document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
+  $(pageId).classList.remove('hidden');
+  document.querySelectorAll('.nav button').forEach(b => {
+    b.classList.toggle('active', b.dataset.page === pageId);
+  });
+  if (pageId === 'dashboard') renderDashboard();
+  if (pageId === 'archive') renderArchiveTable();
+}
+document.querySelectorAll('.nav button').forEach(btn => {
+  btn.onclick = () => showPage(btn.dataset.page);
+});
+
+// Logo Handling
+function getSavedLogo() {
+  return localStorage.getItem('tplCustomLogo') || '';
+}
+
+function updateLogoThumb() {
+  const logo = getSavedLogo();
+  if (logo) {
+    $('logoThumbPreview').innerHTML = `<img src="${logo}" alt="Logo Instansi">`;
+  } else {
+    $('logoThumbPreview').innerHTML = DEFAULT_Logo_SVG;
+  }
+}
+
+$('logoFileInput').addEventListener('change', e => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    localStorage.setItem('tplCustomLogo', reader.result);
+    updateLogoThumb();
+    if (currentNotulaData) renderNotulaPaper(currentNotulaData);
+    alert('Logo berhasil diunggah dan disimpan!');
+  };
+  reader.readAsDataURL(file);
+});
+
+$('resetDefaultLogoBtn').onclick = () => {
+  localStorage.removeItem('tplCustomLogo');
+  updateLogoThumb();
+  if (currentNotulaData) renderNotulaPaper(currentNotulaData);
+  alert('Logo dikembalikan ke lambang resmi Logo.');
+};
+
+// Settings
+function getKopSettings() {
+  return {
+    gov: localStorage.getItem('tplGov') || $('tplGov').value,
+    dept: localStorage.getItem('tplDept') || $('tplDept').value,
+    address: localStorage.getItem('tplAddress') || $('tplAddress').value,
+    city: localStorage.getItem('tplCity') || $('tplCity').value || 'Serang',
+    signer: localStorage.getItem('tplSigner') || $('tplSigner').value,
+    signerTitle: localStorage.getItem('tplSignerTitle') || $('tplSignerTitle').value,
+    nip: localStorage.getItem('tplNip') || $('tplNip').value,
+    logo: getSavedLogo()
+  };
+}
+
+$('saveTemplateBtn').onclick = () => {
+  localStorage.setItem('tplGov', $('tplGov').value);
+  localStorage.setItem('tplDept', $('tplDept').value);
+  localStorage.setItem('tplAddress', $('tplAddress').value);
+  localStorage.setItem('tplCity', $('tplCity').value);
+  localStorage.setItem('tplSigner', $('tplSigner').value);
+  localStorage.setItem('tplSignerTitle', $('tplSignerTitle').value);
+  localStorage.setItem('tplNip', $('tplNip').value);
+  alert('Identitas Kop Surat dan Pejabat Penandatangan berhasil disimpan!');
+  if (currentNotulaData) renderNotulaPaper(currentNotulaData);
+};
+
+$('saveApiSettingsBtn').onclick = () => {
+  localStorage.setItem('geminiKey', $('apiKey').value.trim());
+  localStorage.setItem('geminiModel', $('modelSelect').value);
+  alert('Pengaturan API Key & Model berhasil disimpan!');
+};
+
+function loadSettings() {
+  if (localStorage.getItem('tplGov')) $('tplGov').value = localStorage.getItem('tplGov');
+  if (localStorage.getItem('tplDept')) $('tplDept').value = localStorage.getItem('tplDept');
+  if (localStorage.getItem('tplAddress')) $('tplAddress').value = localStorage.getItem('tplAddress');
+  if (localStorage.getItem('tplCity')) $('tplCity').value = localStorage.getItem('tplCity');
+  if (localStorage.getItem('tplSigner')) $('tplSigner').value = localStorage.getItem('tplSigner');
+  if (localStorage.getItem('tplSignerTitle')) $('tplSignerTitle').value = localStorage.getItem('tplSignerTitle');
+  if (localStorage.getItem('tplNip')) $('tplNip').value = localStorage.getItem('tplNip');
+  if (localStorage.getItem('geminiKey')) $('apiKey').value = localStorage.getItem('geminiKey');
+  if (localStorage.getItem('geminiModel')) $('modelSelect').value = localStorage.getItem('geminiModel');
+  updateLogoThumb();
+}
+loadSettings();
+
+// File Drag & Drop
+const dropArea = $('dropArea');
+const fileInput = $('fileInput');
+dropArea.onclick = () => fileInput.click();
+
+['dragenter', 'dragover'].forEach(name => {
+  dropArea.addEventListener(name, e => { e.preventDefault(); dropArea.classList.add('drag'); });
+});
+['dragleave', 'drop'].forEach(name => {
+  dropArea.addEventListener(name, e => { e.preventDefault(); dropArea.classList.remove('drag'); });
+});
+
+dropArea.addEventListener('drop', e => {
+  if (e.dataTransfer.files) handleFiles(e.dataTransfer.files);
+});
+fileInput.addEventListener('change', e => {
+  if (e.target.files) handleFiles(e.target.files);
+});
+
+function handleFiles(files) {
+  uploadedFiles = [...uploadedFiles, ...Array.from(files)];
+  renderFileList();
+}
+
+function renderFileList() {
+  $('fileList').innerHTML = uploadedFiles.map(f => `
+    <div class="fileitem">
+      <span>📄 <b>${escapeHtml(f.name)}</b></span>
+      <span>${(f.size / 1024).toFixed(1)} KB</span>
+    </div>
+  `).join('');
+}
+
+$('clearFiles').onclick = () => {
+  uploadedFiles = [];
+  rawExtractedText = "";
+  renderFileList();
+};
+
+function escapeHtml(str) {
+  return String(str ?? '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+}
+
+// Extract text
+async function extractTextFromFile(file) {
+  const ext = file.name.split('.').pop().toLowerCase();
+  if (ext === 'txt') return await file.text();
+  if (ext === 'docx' && window.mammoth) {
+    const res = await mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() });
+    return res.value;
+  }
+  if (ext === 'pptx' && window.JSZip) {
+    const zip = await JSZip.loadAsync(await file.arrayBuffer());
+    let txt = [];
+    for (const key of Object.keys(zip.files)) {
+      if (/^ppt\/slides\/slide\d+\.xml$/i.test(key)) {
+        const slideXml = await zip.files[key].async('text');
+        txt.push(slideXml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' '));
+      }
+    }
+    return txt.join('\n');
+  }
+  try { return await file.text(); } catch(e) { return `[Bahan: ${file.name}]`; }
+}
+
+async function extractAllFiles() {
+  let combined = [];
+  for (const f of uploadedFiles) {
+    const content = await extractTextFromFile(f);
+    combined.push(`--- BAHAN: ${f.name} ---\n` + content);
+  }
+  return combined.join('\n\n');
+}
+
+// AI System Prompt matching official Notula structure
+const SYSTEM_PROMPT = `Anda adalah Asisten Notulis Pemerintahan resmi Provinsi. Tugas Anda adalah menganalisis bahan rapat dan menyusun NOTULA RESMI sesuai format baku pemerintah.
+
+Format JSON yang HARUS Anda hasilkan:
+{
+  "nama_kegiatan": "Judul/Nama Rapat",
+  "tanggal": "Hari, DD Bulan YYYY",
+  "surat_undangan": "Nomor surat undangan atau '-'",
+  "waktu_media": "Waktu dan tempat pelaksanaan",
+  "pimpinan": "Nama/Jabatan Pimpinan Rapat",
+  "notulis": "Nama/Jabatan Pencatat",
+  "peserta": ["1. Nama Instansi/Pejabat A", "2. Nama Instansi/Pejabat B"],
+  "kegiatan_rapat": [
+    "1. Rapat dibuka oleh Pimpinan Rapat dengan arahan...",
+    "2. Paparan dan Masukan dari instansi peserta rapat..."
+  ],
+  "pembahasan_detail": [
+    {
+      "pembicara_topik": "Instansi / Narasumber X",
+      "poin_masukan": [
+        "Poin deskripsi penjelasan teknis A",
+        "Poin deskripsi data spasial atau kebutuhan infrastruktur B"
+      ]
+    }
+  ],
+  "kesimpulan": [
+    "Poin kesimpulan utama rapat 1",
+    "Poin kesimpulan utama rapat 2"
+  ],
+  "tindak_lanjut": [
+    {
+      "tindak_lanjut": "Deskripsi tindak lanjut dan komitmen pekerjaan",
+      "pic": "Instansi Penanggung Jawab",
+      "target_waktu": "Waktu pelaksanaan",
+      "status": "Belum dimulai"
+    }
+  ]
+}
+Gunakan Bahasa Indonesia formal, birokratis, ringkas, dan jelas.`;
+
+async function runGeminiAnalysis(text) {
+  const apiKey = localStorage.getItem('geminiKey') || $('apiKey').value.trim();
+  const model = localStorage.getItem('geminiModel') || $('modelSelect').value || 'gemini-3.5-flash-lite';
+
+  if (!apiKey) {
+    throw new Error('API Key Gemini belum diisi. Masukkan API Key di tab Pengaturan & Logo.');
+  }
+
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+  const payload = {
+    system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
+    contents: [{ role: 'user', parts: [{ text: 'Susun notula rapat resmi dari data berikut:\n\n' + text }] }],
+    generationConfig: { responseMimeType: 'application/json' }
+  };
+
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+
+  if (!response.ok) {
+    const errText = await response.text();
+    throw new Error(`Gagal AI (${response.status}): ` + errText);
+  }
+
+  const resJson = await response.json();
+  const rawText = resJson.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+  return JSON.parse(rawText.replace(/^```json|```$/g, '').trim());
+}
+
+// ==========================================
+// RENDER OFFICIAL NOTULA PAPER
+// ==========================================
+function renderNotulaPaper(data) {
+  currentNotulaData = data;
+  const kop = getKopSettings();
+
+  // Populate inputs
+  $('fName').value = data.nama_kegiatan || '';
+  $('fDate').value = data.tanggal || '';
+  $('fInvite').value = data.surat_undangan || '-';
+  $('fTime').value = data.waktu_media || '';
+  $('fLeader').value = data.pimpinan || '';
+  $('fNotulis').value = data.notulis || '';
+  $('fParticipants').value = (data.peserta || []).join('\n');
+
+  // Logo Markup
+  const logoMarkup = kop.logo ?
+    `<div class="kop-logo-box"><img src="${kop.logo}" alt="Logo"></div>` :
+    `<div class="kop-logo-box">${DEFAULT_Logo_SVG}</div>`;
+
+  let html = `
+  <div class="template-paper" id="printableNotula">
+    <!-- KOP SURAT RESMI -->
+    <div class="official-kop">
+      ${logoMarkup}
+      <div class="kop-text">
+        <div class="kop-gov">${escapeHtml(kop.gov)}</div>
+        <div class="kop-dept">${escapeHtml(kop.dept)}</div>
+        <div class="kop-address">${escapeHtml(kop.address).replace(/\n/g, '<br>')}</div>
+      </div>
+    </div>
+
+    <!-- JUDUL -->
+    <div class="notula-title">NOTULA</div>
+
+    <!-- METADATA RAPAT -->
+    <table class="meta-table">
+      <tr>
+        <td class="label-td">Rapat</td>
+        <td class="colon">:</td>
+        <td><b>${escapeHtml(data.nama_kegiatan || '-')}</b></td>
+      </tr>
+      <tr>
+        <td class="label-td">Hari/Tanggal</td>
+        <td class="colon">:</td>
+        <td>${escapeHtml(data.tanggal || '-')}</td>
+      </tr>
+      <tr>
+        <td class="label-td">Surat Undangan</td>
+        <td class="colon">:</td>
+        <td>${escapeHtml(data.surat_undangan || '-')}</td>
+      </tr>
+      <tr>
+        <td class="label-td">Waktu Rapat</td>
+        <td class="colon">:</td>
+        <td>${escapeHtml(data.waktu_media || '-')}</td>
+      </tr>
+      <tr>
+        <td class="label-td">Pimpinan Rapat</td>
+        <td class="colon">:</td>
+        <td>${escapeHtml(data.pimpinan || '-')}</td>
+      </tr>
+      <tr>
+        <td class="label-td">Pencatat</td>
+        <td class="colon">:</td>
+        <td>${escapeHtml(data.notulis || '-')}</td>
+      </tr>
+      <tr>
+        <td class="label-td">Peserta Rapat</td>
+        <td class="colon">:</td>
+        <td>
+          ${(data.peserta && data.peserta.length) ? data.peserta.map(p => `<div>${escapeHtml(p)}</div>`).join('') : '-'}
+        </td>
+      </tr>
+    </table>
+
+    <!-- KEGIATAN RAPAT -->
+    <div class="sec-title">Kegiatan Rapat :</div>
+    <div class="sec-content">
+      ${(data.kegiatan_rapat || []).map((item, idx) => `<p style="margin:4px 0">${escapeHtml(item)}</p>`).join('')}
+
+      ${(data.pembahasan_detail || []).map((d, i) => `
+        <div style="margin-top:8px">
+          <b>${i + 2}. ${escapeHtml(d.pembicara_topik)}</b>
+          <ol type="a" style="margin:4px 0 8px 24px">
+            ${(d.poin_masukan || []).map(p => `<li>${escapeHtml(p)}</li>`).join('')}
+          </ol>
+        </div>
+      `).join('')}
+    </div>
+
+    <!-- KESIMPULAN -->
+    <div class="sec-title">Kesimpulan :</div>
+    <div class="sec-content">
+      <ol style="margin:4px 0 8px 24px">
+        ${(data.kesimpulan || []).map(k => `<li>${escapeHtml(k)}</li>`).join('')}
+      </ol>
+    </div>
+
+    <!-- TINDAK LANJUT & KOMITMEN -->
+    <div class="sec-title">Tindak Lanjut dan Komitmen :</div>
+    <div class="sec-content">
+      <table class="official-table">
+        <thead>
+          <tr>
+            <th style="width:35px">No</th>
+            <th>Tindak Lanjut</th>
+            <th style="width:160px">PIC / Instansi</th>
+            <th style="width:110px">Target Waktu</th>
+            <th style="width:85px">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${(data.tindak_lanjut && data.tindak_lanjut.length) ? data.tindak_lanjut.map((tl, i) => `
+            <tr>
+              <td style="text-align:center">${i + 1}</td>
+              <td>${escapeHtml(tl.tindak_lanjut || '')}</td>
+              <td>${escapeHtml(tl.pic || '')}</td>
+              <td>${escapeHtml(tl.target_waktu || 'Belum ditentukan')}</td>
+              <td style="text-align:center">${escapeHtml(tl.status || 'Belum dimulai')}</td>
+            </tr>
+          `).join('') : `<tr><td colspan="5" style="text-align:center">Tidak ada tindak lanjut khusus</td></tr>`}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- TANDA TANGAN -->
+    <div class="sig-container">
+      <div class="signature-block">
+        <div>${escapeHtml(kop.city)}, ${escapeHtml(data.tanggal ? data.tanggal.replace(/^[^,]+,\s*/, '') : '2026')}</div>
+        <div>${escapeHtml(kop.signerTitle)}</div>
+        <div style="font-size:10.5pt">${escapeHtml(kop.dept)}</div>
+        <div class="signer-space"></div>
+        <div class="signer-name">${escapeHtml(kop.signer)}</div>
+        <div>NIP ${escapeHtml(kop.nip)}</div>
+      </div>
+    </div>
+  </div>`;
+
+  $('resultContainer').innerHTML = html;
+  $('emptyResult').classList.add('hidden');
+}
+
+// AI Triggers
+$('processBtn').onclick = async () => {
+  if (!uploadedFiles.length) {
+    alert('Silakan upload file bahan rapat terlebih dahulu.');
+    return;
+  }
+  $('loadingBox').classList.remove('hidden');
+  try {
+    rawExtractedText = await extractAllFiles();
+    const data = await runGeminiAnalysis(rawExtractedText);
+    renderNotulaPaper(data);
+    alert('Notulensi resmi berhasil disusun oleh AI!');
+  } catch (err) {
+    alert('Terjadi kesalahan: ' + err.message);
+  } finally {
+    $('loadingBox').classList.add('hidden');
+  }
+};
+
+$('regenerateBtn').onclick = async () => {
+  if (!rawExtractedText) {
+    alert('Belum ada bahan rapat yang terbaca.');
+    return;
+  }
+  $('loadingBox').classList.remove('hidden');
+  try {
+    const data = await runGeminiAnalysis(rawExtractedText);
+    renderNotulaPaper(data);
+  } catch(e) {
+    alert(e.message);
+  } finally {
+    $('loadingBox').classList.add('hidden');
+  }
+};
+
+// Edit Toggle
+$('editToggleBtn').onclick = () => {
+  isEditable = !isEditable;
+  const paper = $('printableNotula');
+  if (paper) {
+    paper.contentEditable = isEditable ? 'true' : 'false';
+    paper.style.outline = isEditable ? '2px dashed #1f6feb' : 'none';
+  }
+  $('editState').textContent = isEditable ? 'Mode Edit Aktif' : 'Preview Mode';
+  $('editState').className = 'badge ' + (isEditable ? 'draft' : 'final');
+  $('editToggleBtn').textContent = isEditable ? '✓ Selesai Edit' : '✎ Edit Lembar Teks';
+};
+
+// Archive
+function getArchives() {
+  return JSON.parse(localStorage.getItem('aiNotulensiArchives') || '[]');
+}
+
+$('saveArchiveBtn').onclick = () => {
+  if (!currentNotulaData) {
+    alert('Belum ada data notula.');
+    return;
+  }
+  const list = getArchives();
+  const item = {
+    id: 'NTL-' + Date.now().toString().slice(-6),
+    title: $('fName').value || 'Notula Rapat',
+    date: $('fDate').value || new Date().toISOString().slice(0,10),
+    data: currentNotulaData,
+    html: $('resultContainer').innerHTML,
+    savedAt: new Date().toLocaleString('id-ID')
+  };
+  list.unshift(item);
+  localStorage.setItem('aiNotulensiArchives', JSON.stringify(list));
+  alert('Notulensi berhasil disimpan ke Arsip!');
+  renderDashboard();
+};
+
+function renderArchiveTable() {
+  const q = ($('searchInput')?.value || '').toLowerCase();
+  const list = getArchives().filter(item => {
+    return !q || item.title.toLowerCase().includes(q) || item.date.toLowerCase().includes(q);
+  });
+
+  if (!list.length) {
+    $('archiveTableContainer').innerHTML = '<div class="notice">Belum ada arsip notulensi tersimpan.</div>';
+    return;
+  }
+
+  let rows = list.map(item => `
+    <tr>
+      <td><b>${item.id}</b></td>
+      <td><b>${escapeHtml(item.title)}</b></td>
+      <td>${escapeHtml(item.date)}</td>
+      <td><span class="badge final">Tersimpan</span></td>
+      <td>
+        <button class="btn secondary" style="padding:4px 8px;font-size:11px" onclick="loadArchive('${item.id}')">Buka</button>
+        <button class="btn danger" style="padding:4px 8px;font-size:11px" onclick="deleteArchive('${item.id}')">Hapus</button>
+      </td>
+    </tr>
+  `).join('');
+
+  $('archiveTableContainer').innerHTML = `
+    <table>
+      <thead>
+        <tr><th>ID</th><th>Nama Kegiatan</th><th>Tanggal</th><th>Status</th><th>Aksi</th></tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+}
+
+window.loadArchive = (id) => {
+  const item = getArchives().find(x => x.id === id);
+  if (item) {
+    currentNotulaData = item.data;
+    $('resultContainer').innerHTML = item.html;
+    $('emptyResult').classList.add('hidden');
+    showPage('create');
+  }
+};
+
+window.deleteArchive = (id) => {
+  if (confirm('Hapus notulensi ini dari arsip?')) {
+    const list = getArchives().filter(x => x.id !== id);
+    localStorage.setItem('aiNotulensiArchives', JSON.stringify(list));
+    renderArchiveTable();
+    renderDashboard();
+  }
+};
+
+function renderDashboard() {
+  const list = getArchives();
+  $('mTotal').textContent = list.length;
+  $('mFinal').textContent = list.length;
+  $('mDraft').textContent = currentNotulaData ? '1' : '0';
+  $('mMonth').textContent = list.length;
+
+  $('recentList').innerHTML = list.slice(0, 5).map(item => `
+    <div style="padding:12px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div style="font-weight:700;color:var(--navy)">${escapeHtml(item.title)}</div>
+        <small style="color:var(--muted)">${escapeHtml(item.date)} · ID: ${item.id}</small>
+      </div>
+      <button class="btn secondary" style="padding:6px 12px;font-size:12px" onclick="loadArchive('${item.id}')">Lihat Notula</button>
+    </div>
+  `).join('') || '<div class="notice">Belum ada notulensi tersimpan.</div>';
+}
+renderDashboard();
+
+// =========================================================
+// ULTRA-ROBUST DOCX EXPORTER WITH EMBEDDED LOGO & STYLING
+// =========================================================
+async function exportToDocxOfficial() {
+  const paper = $('printableNotula');
+  if (!paper) {
+    alert('Belum ada notulensi untuk di-download.');
+    return;
+  }
+
+  const kop = getKopSettings();
+  const name = $('fName').value || 'Notula Rapat';
+  const date = $('fDate').value || '-';
+  const invite = $('fInvite').value || '-';
+  const time = $('fTime').value || '-';
+  const leader = $('fLeader').value || '-';
+  const notulis = $('fNotulis').value || '-';
+  const participants = ($('fParticipants').value || '').split('\n').filter(Boolean);
+
+  // Check for docx library
+  const docxLib = window.docx;
+
+  if (docxLib && docxLib.Document) {
+    try {
+      const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType, BorderStyle, Media, ImageRun } = docxLib;
+
+      const noBorder = {
+        top: { style: BorderStyle.NONE, size: 0, color: "auto" },
+        bottom: { style: BorderStyle.NONE, size: 0, color: "auto" },
+        left: { style: BorderStyle.NONE, size: 0, color: "auto" },
+        right: { style: BorderStyle.NONE, size: 0, color: "auto" }
+      };
+
+      // Header paragraph
+      const children = [
+        new Paragraph({ text: kop.gov, alignment: AlignmentType.CENTER, run: { bold: true, size: 28, font: "Times New Roman" } }),
+        new Paragraph({ text: kop.dept, alignment: AlignmentType.CENTER, run: { bold: true, size: 30, font: "Times New Roman" } }),
+        new Paragraph({ text: kop.address, alignment: AlignmentType.CENTER, run: { size: 19, font: "Times New Roman" } }),
+        new Paragraph({ text: "_______________________________________________________________________________", alignment: AlignmentType.CENTER, run: { bold: true } }),
+        new Paragraph({ text: "", spacing: { after: 140 } }),
+
+        // NOTULA TITLE
+        new Paragraph({ text: "NOTULA", alignment: AlignmentType.CENTER, run: { bold: true, underline: {}, size: 30, font: "Times New Roman" }, spacing: { after: 180 } }),
+
+        // METADATA TABLE
+        new Table({
+          width: { size: 100, type: WidthType.PERCENTAGE },
+          borders: noBorder,
+          rows: [
+            new TableRow({ children: [new TableCell({ width: { size: 25, type: WidthType.PERCENTAGE }, children: [new Paragraph({ text: "Rapat", run: { font: "Times New Roman", size: 23 } })] }), new TableCell({ width: { size: 4, type: WidthType.PERCENTAGE }, children: [new Paragraph({ text: ":", run: { font: "Times New Roman", size: 23 } })] }), new TableCell({ width: { size: 71, type: WidthType.PERCENTAGE }, children: [new Paragraph({ children: [new TextRun({ text: name, bold: true, font: "Times New Roman", size: 23 })] })] })] }),
+            new TableRow({ children: [new TableCell({ children: [new Paragraph({ text: "Hari/Tanggal", run: { font: "Times New Roman", size: 23 } })] }), new TableCell({ children: [new Paragraph({ text: ":", run: { font: "Times New Roman", size: 23 } })] }), new TableCell({ children: [new Paragraph({ text: date, run: { font: "Times New Roman", size: 23 } })] })] }),
+            new TableRow({ children: [new TableCell({ children: [new Paragraph({ text: "Surat Undangan", run: { font: "Times New Roman", size: 23 } })] }), new TableCell({ children: [new Paragraph({ text: ":", run: { font: "Times New Roman", size: 23 } })] }), new TableCell({ children: [new Paragraph({ text: invite, run: { font: "Times New Roman", size: 23 } })] })] }),
+            new TableRow({ children: [new TableCell({ children: [new Paragraph({ text: "Waktu Rapat", run: { font: "Times New Roman", size: 23 } })] }), new TableCell({ children: [new Paragraph({ text: ":", run: { font: "Times New Roman", size: 23 } })] }), new TableCell({ children: [new Paragraph({ text: time, run: { font: "Times New Roman", size: 23 } })] })] }),
+            new TableRow({ children: [new TableCell({ children: [new Paragraph({ text: "Pimpinan Rapat", run: { font: "Times New Roman", size: 23 } })] }), new TableCell({ children: [new Paragraph({ text: ":", run: { font: "Times New Roman", size: 23 } })] }), new TableCell({ children: [new Paragraph({ text: leader, run: { font: "Times New Roman", size: 23 } })] })] }),
+            new TableRow({ children: [new TableCell({ children: [new Paragraph({ text: "Pencatat", run: { font: "Times New Roman", size: 23 } })] }), new TableCell({ children: [new Paragraph({ text: ":", run: { font: "Times New Roman", size: 23 } })] }), new TableCell({ children: [new Paragraph({ text: notulis, run: { font: "Times New Roman", size: 23 } })] })] }),
+            new TableRow({ children: [new TableCell({ children: [new Paragraph({ text: "Peserta Rapat", run: { font: "Times New Roman", size: 23 } })] }), new TableCell({ children: [new Paragraph({ text: ":", run: { font: "Times New Roman", size: 23 } })] }), new TableCell({ children: participants.map(p => new Paragraph({ text: p, run: { font: "Times New Roman", size: 23 } })) })] })
+          ]
+        }),
+
+        new Paragraph({ text: "", spacing: { after: 140 } }),
+        new Paragraph({ text: "Kegiatan Rapat :", run: { bold: true, font: "Times New Roman", size: 23 } }),
+        ...(currentNotulaData?.kegiatan_rapat || []).map(kr => new Paragraph({ text: kr, run: { font: "Times New Roman", size: 23 } })),
+        ...(currentNotulaData?.pembahasan_detail || []).flatMap(pd => [
+          new Paragraph({ text: pd.pembicara_topik, run: { bold: true, font: "Times New Roman", size: 23 }, spacing: { before: 80 } }),
+          ...(pd.poin_masukan || []).map(pm => new Paragraph({ text: "• " + pm, indent: { left: 360 }, run: { font: "Times New Roman", size: 23 } }))
+        ]),
+
+        new Paragraph({ text: "", spacing: { after: 140 } }),
+        new Paragraph({ text: "Kesimpulan :", run: { bold: true, font: "Times New Roman", size: 23 } }),
+        ...(currentNotulaData?.kesimpulan || []).map((ks, i) => new Paragraph({ text: `${i + 1}. ${ks}`, run: { font: "Times New Roman", size: 23 } })),
+
+        new Paragraph({ text: "", spacing: { after: 140 } }),
+        new Paragraph({ text: "Tindak Lanjut dan Komitmen :", run: { bold: true, font: "Times New Roman", size: 23 } }),
+        new Table({
+          width: { size: 100, type: WidthType.PERCENTAGE },
+          rows: [
+            new TableRow({
+              children: [
+                new TableCell({ children: [new Paragraph({ text: "No", run: { bold: true, font: "Times New Roman", size: 22 }, alignment: AlignmentType.CENTER })] }),
+                new TableCell({ children: [new Paragraph({ text: "Tindak Lanjut", run: { bold: true, font: "Times New Roman", size: 22 } })] }),
+                new TableCell({ children: [new Paragraph({ text: "PIC / Instansi", run: { bold: true, font: "Times New Roman", size: 22 } })] }),
+                new TableCell({ children: [new Paragraph({ text: "Target Waktu", run: { bold: true, font: "Times New Roman", size: 22 } })] }),
+                new TableCell({ children: [new Paragraph({ text: "Status", run: { bold: true, font: "Times New Roman", size: 22 } })] })
+              ]
+            }),
+            ...(currentNotulaData?.tindak_lanjut || []).map((tl, i) => new TableRow({
+              children: [
+                new TableCell({ children: [new Paragraph({ text: String(i + 1), alignment: AlignmentType.CENTER, run: { font: "Times New Roman", size: 22 } })] }),
+                new TableCell({ children: [new Paragraph({ text: tl.tindak_lanjut || '-', run: { font: "Times New Roman", size: 22 } })] }),
+                new TableCell({ children: [new Paragraph({ text: tl.pic || '-', run: { font: "Times New Roman", size: 22 } })] }),
+                new TableCell({ children: [new Paragraph({ text: tl.target_waktu || '-', run: { font: "Times New Roman", size: 22 } })] }),
+                new TableCell({ children: [new Paragraph({ text: tl.status || '-', alignment: AlignmentType.CENTER, run: { font: "Times New Roman", size: 22 } })] })
+              ]
+            }))
+          ]
+        }),
+
+        new Paragraph({ text: "", spacing: { after: 280 } }),
+        new Paragraph({ text: `${kop.city}, ${date.replace(/^[^,]+,\s*/, '')}`, alignment: AlignmentType.RIGHT, run: { font: "Times New Roman", size: 23 } }),
+        new Paragraph({ text: kop.signerTitle, alignment: AlignmentType.RIGHT, run: { font: "Times New Roman", size: 23 } }),
+        new Paragraph({ text: kop.dept, alignment: AlignmentType.RIGHT, run: { font: "Times New Roman", size: 21 } }),
+        new Paragraph({ text: "", spacing: { after: 720 } }),
+        new Paragraph({ text: kop.signer, alignment: AlignmentType.RIGHT, run: { bold: true, underline: {}, font: "Times New Roman", size: 23 } }),
+        new Paragraph({ text: `NIP ${kop.nip}`, alignment: AlignmentType.RIGHT, run: { font: "Times New Roman", size: 23 } })
+      ];
+
+      const doc = new Document({
+        styles: { default: { document: { run: { font: "Times New Roman", size: 23 } } } },
+        sections: [{ properties: { page: { margin: { top: 1134, right: 1134, bottom: 1134, left: 1134 } } }, children }]
+      });
+
+      const blob = await Packer.toBlob(doc);
+      downloadBlobFile(blob, `Notula_${safeFilename(name)}.docx`);
+      return;
+    } catch (err) {
+      console.warn("docx.js builder issue, falling back to Native Word Document:", err);
+    }
+  }
+
+  // Fallback Native Engine
+  const wordHtml = `
+    <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+    <head><meta charset='utf-8'><title>${escapeHtml(name)}</title>
+    <style>
+      @page WordSection1 {size:595.3pt 841.9pt; margin:42.5pt 42.5pt 42.5pt 42.5pt;}
+      div.WordSection1 {page:WordSection1;}
+      body {font-family:"Times New Roman", serif; font-size:11.5pt; line-height:1.35; color:#000;}
+      table {border-collapse:collapse; width:100%;}
+      td, th {vertical-align:top; font-family:"Times New Roman", serif;}
+      .table-bordered td, .table-bordered th {border:1pt solid black; padding:4pt 6pt;}
+    </style>
+    </head>
+    <body>
+      <div class="WordSection1">
+        ${paper.innerHTML}
+      </div>
+    </body>
+    </html>
+  `;
+  const blob = new Blob(['\ufeff' + wordHtml], { type: 'application/msword' });
+  downloadBlobFile(blob, `Notula_${safeFilename(name)}.doc`);
+}
+
+function safeFilename(str) {
+  return (str || 'Notulensi').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 50);
+}
+
+function downloadBlobFile(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => {
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, 500);
+}
+
+$('docxExportBtn').onclick = exportToDocxOfficial;
+
+// =========================================================
+// PDF EXPORT (A4 CALIBRATED HIGH RES)
+// ==========================================
+$('pdfExportBtn').onclick = () => {
+  if (!$('printableNotula')) {
+    alert('Belum ada lembar notulensi.');
+    return;
+  }
+  window.print();
+};
+
+// Initial Demo Data
+renderNotulaPaper({
+  nama_kegiatan: "Terisi Otomatis Oleh AI",
+  tanggal: "Terisi Otomatis Oleh AI",
+  surat_undangan: "Terisi Otomatis Oleh AI",
+  waktu_media: "Terisi Otomatis Oleh AI",
+  pimpinan: "Terisi Otomatis Oleh AI",
+  notulis: "Terisi Otomatis Oleh AI",
+  peserta: [
+    "Terisi Otomatis Oleh AI",
+    "Terisi Otomatis Oleh AI",
+    "Terisi Otomatis Oleh AI",
+    "Terisi Otomatis Oleh AI",
+    "Terisi Otomatis Oleh AI"
+  ],
+  kegiatan_rapat: [
+    "Terisi Otomatis Oleh AI",
+    "Terisi Otomatis Oleh AI"
+  ],
+  pembahasan_detail: [
+    {
+      "pembicara_topik": "Terisi Otomatis Oleh AI",
+      "poin_masukan": [
+        "Terisi Otomatis Oleh AI",
+        "Terisi Otomatis Oleh AI"
+      ]
+    },
+    {
+      "pembicara_topik": "Terisi Otomatis Oleh AI",
+      "poin_masukan": [
+        "Terisi Otomatis Oleh AI",
+        "Terisi Otomatis Oleh AI"
+      ]
+    }
+  ],
+  kesimpulan: [
+    "Terisi Otomatis Oleh AI",
+    "Terisi Otomatis Oleh AI"
+  ],
+  tindak_lanjut: [
+    {
+      "tindak_lanjut": "Terisi Otomatis Oleh AI",
+      "pic": "Terisi Otomatis Oleh AI",
+      "target_waktu": "Terisi Otomatis Oleh AI",
+      "status": "Terisi Otomatis Oleh AI"
+    },
+    {
+      "tindak_lanjut": "Terisi Otomatis Oleh AI",
+      "pic": "Terisi Otomatis Oleh AI",
+      "target_waktu": "Terisi Otomatis Oleh AI",
+      "status": "Terisi Otomatis Oleh AI"
+    },
+    {
+      "tindak_lanjut": "Terisi Otomatis Oleh AI",
+      "pic": "Terisi Otomatis Oleh AI",
+      "target_waktu": "Terisi Otomatis Oleh AI",
+      "status": "Terisi Otomatis Oleh AI"
+    }
+  ]
+});
+</script>
+</body>
+</html>
